@@ -14,9 +14,9 @@ class Cell(Gtk.Button):
         self.is_ball = False
         self.button = Gtk.ToggleButton().new()
         self.button.set_size_request(50, 50)
+        self.button.show()
 
     def place_ball(self, color):
-
         ball = GdkPixbuf.Pixbuf.new_from_file_at_size(str(color) + '.svg', 35, 35)
         image = Gtk.Image()
 
@@ -26,6 +26,7 @@ class Cell(Gtk.Button):
         self.is_ball = True
         self.button.add(image)
         self.button.show()
+
 
 # noinspection PyUnresolvedReferences
 class BallsGrid(Gtk.Grid):
@@ -39,6 +40,7 @@ class BallsGrid(Gtk.Grid):
         for row in range(rows):
             for col in range(cols):
                 cell = Cell()
+                cell.show()
                 self.cells.append(cell)
                 self.attach(cell.button, row, col, 1, 1)
 
@@ -64,72 +66,84 @@ class BallsGrid(Gtk.Grid):
 
         color = self.cells[from_point].ball_color
         self.cells[to_point].place_ball(color)
-        print self.cells[to_point]
         self.cells[from_point].button.get_child().destroy()
         self.cells[from_point].is_ball = False
+        self.cells[from_point].ball_color = None
         self.place_balls(3)
+        self.check_balls()
 
-        (row, col) = self.get_row_col_button(to_point)
+    def check_balls(self):
 
-        # szukam sasiada
+        for row in range(self.rows):
+            for col in range(self.cols):
+                # szukam sasiada
+                index = self.get_index(row, col)
 
-        index_horizontal_right = self.get_index(row + 1, col)
-        index_horizontal_left = self.get_index(row - 1, col)
+                if self.cells[index].is_ball:
+                    vertical = 0
+                    horizontal = 0
+                    cross = 0
+                    color = self.cells[index].ball_color
+                    coor = index
+                    coor_horizontal = index
+                    coor_cross = index
+                    delete_vertical = []
+                    delete_horizontal = []
+                    delete_cross = []
+                    for i in range(0, 5):
+                        if coor <= 99:
+                            if self.cells[coor].ball_color == color:
+                                vertical += 1
+                                delete_vertical.append(coor)
+                        if coor_horizontal <= 99:
+                            if self.cells[coor_horizontal].ball_color == color and horizontal <= 5:
+                                horizontal += 1
+                                delete_horizontal.append(coor_horizontal)
+                        if coor_cross <= 99:
+                            if self.cells[coor_cross].ball_color == color and cross <= 5:
+                                cross += 1
+                                delete_cross.append(coor_cross)
 
-        index_vertical_up = self.get_index(row, col + 1)
-        index_vertical_down = self.get_index(row, col - 1)
+                        coor_cross += 11
+                        coor_horizontal += 10
+                        coor += 1
 
-        horizontal_left, horizontal_right = 0, 0
-        vertical_top, vertival_down = 0, 0
+                    if vertical == 5:
+                        print "Mam pionowo kolor {}: ".format(color)
+                        for i, val in enumerate(delete_vertical):
+                            print 'Usuwam index {} wartosc is_ball {}'.format(val, self.cells[val].is_ball)
+                            self.cells[val].is_ball = False
+                            self.cells[val].ball_color = None
+                            self.cells[val].button.get_child().destroy()
 
-        if self.cells[index_horizontal_left].ball_color == color:
-            horizontal_left += 1
-        if self.cells[index_horizontal_right].ball_color == color:
-            horizontal_right += 1
-        if self.cells[index_vertical_up].ball_color == color:
-            vertical_top += 1
-        if self.cells[index_vertical_down].ball_color == color:
-            vertival_down += 1
+                    # for i in range(0, 5):
+                    #     if coor_horizontal <= 99:
+                    #         if self.cells[coor_horizontal].ball_color == color and horizontal <= 5:
+                    #             horizontal += 1
+                    #             delete_horizontal.append(coor_horizontal)
+                    #     coor_horizontal += 10
 
-        for i in range(0, 5):
+                    if horizontal == 5:
+                        for i, val in enumerate(delete_horizontal):
+                            print 'Usuwam index {} wartosc is_ball {}'.format(val, self.cells[val].is_ball)
+                            self.cells[val].is_ball = False
+                            self.cells[val].ball_color = None
+                            self.cells[val].button.get_child().destroy()
 
-            if index_horizontal_left <= 90:
-                if self.cells[index_horizontal_left].ball_color == color:
-                    horizontal_left += 1
-            if index_horizontal_right <= 90:
-                if self.cells[index_horizontal_right].ball_color == color:
-                    horizontal_right += 1
-            if index_vertical_up <= 90:
-                if self.cells[index_vertical_up].ball_color == color:
-                    vertical_top += 1
-            if index_horizontal_right <= 90:
-                if self.cells[index_vertical_down].ball_color == color:
-                    vertival_down += 1
+                    # for i in range(0, 5):
+                    #     if coor_cross <= 99:
+                    #         if self.cells[coor_cross].ball_color == color and cross <= 5:
+                    #             cross += 1
+                    #             delete_cross.append(coor_cross)
+                    #
+                    #     coor_cross += 11
 
-            index_vertical_up += 1
-            index_vertical_down -= 1
-            index_horizontal_left -= 10
-            index_horizontal_right += 10
-
-        if horizontal_left == 5:
-            for i in range(0, 5):
-               delete_point = self.get_index(row - i, col)
-               self.cells[delete_point].button.get_child().destroy()
-
-        if horizontal_right == 5:
-            for i in range(0, 5):
-               delete_point = self.get_index(row + i, col)
-               self.cells[delete_point].button.get_child().destroy()
-
-        if vertical_top == 5:
-            for i in range(0, 5):
-                delete_point = self.get_index(row, col + i)
-                self.cells[delete_point].button.get_child().destroy()
-
-        if vertival_down == 5:
-            for i in range(0, 5):
-                delete_point = self.get_index(row, col - i)
-                self.cells[delete_point].button.get_child().destroy()
+                    if cross == 5:
+                        for i, val in enumerate(delete_cross):
+                            print 'Usuwam index {} wartosc is_ball {}'.format(val, self.cells[val].is_ball)
+                            self.cells[val].is_ball = False
+                            self.cells[val].ball_color = None
+                            self.cells[val].button.get_child().destroy()
 
     def get_row_col_button(self, index):
         return index / self.cols, index % self.cols
@@ -144,6 +158,7 @@ class App(Gtk.Window):
         self.grid = BallsGrid(rows, cols)
         self.rows = rows
         self.cols = cols
+        self.points_arr = []
         self.click_count = 0
         self.clicked = 0
         self.first_click = -1
@@ -152,42 +167,41 @@ class App(Gtk.Window):
         self.main_box = Gtk.VBox()
         self.ptk = Gtk.Box()
         self.point_box = Gtk.Box(spacing=2)
-
         self.ranking_box = Gtk.Grid()
-
-        self.ranking_label = Gtk.Label(label="Ranking:")
-        self.ranking_label.set_margin_right(2)
-        self.label1 = Gtk.Label(label="1 ")
-        self.label2 = Gtk.Label(label="2 ")
-
-        self.ranking_box.attach(self.ranking_label, 0, 0, 1, 1)
-        self.ranking_box.attach(self.label1, 0, 1, 11, 1)
-        self.ranking_box.attach(self.label2, 0, 2, 1, 1)
-
-        self.point_label = Gtk.Label(label="Liczba punktow:")
-        self.point_label_score = Gtk.Label(label="22")
-
-        self.point_label.set_alignment(0, 0.5)
-        self.point_label_score.set_alignment(-501, 220)
-
-        self.point_box.add(self.point_label)
-        self.point_box.add(self.point_label_score)
-
+        self.ranking_label = Gtk.Label()
         self.vbox.add(self.ranking_box)
         self.main_box.add(self.point_box)
         self.main_box.add(self.vbox)
         self.add(self.main_box)
-
+        self.ranking_panel()
         self.create_grid()
-
+        self.point_label = Gtk.Label(label="Liczba punktow:")
+        self.point_label_score = Gtk.Label()
+        self.point_label_score.set_markup("<b>0</b>")
+        self.point_label.set_alignment(0, 0.5)
+        self.point_box.add(self.point_label)
+        self.point_box.add(self.point_label_score)
         self.connect('destroy', Gtk.main_quit)
 
+    def ranking_panel(self):
 
+        self.ranking_label.set_markup("<b>Ranking: </b>")
+        self.ranking_label.set_margin_right(2)
+        self.points_arr.sort(reverse=True)
+        for i, val in enumerate(self.points_arr):
+            scode_label = Gtk.Label()
+            lp = i + 1
+            print "{} {}".format(lp, val)
+            scode_label.set_markup("<b>" + str(lp) + ".</b> " + str(val))
+            self.ranking_box.attach(scode_label, 0, i + 2, 1, 1)
 
+        self.ranking_box.attach(self.ranking_label, 0, 0, 1, 1)
+        self.ranking_box.show_all()
+        self.ranking_label.show_all()
+        print 'Robie ranking'
 
     def create_grid(self):
         # tworzenie poszczególnych połączeń do przycisków
-
         for i, cell in enumerate(self.grid.cells):
             (row, col) = self.grid.get_row_col_button(i)
             cell.button.connect('clicked', self.clicked_handler, row, col)
@@ -202,10 +216,19 @@ class App(Gtk.Window):
 
     def restart(self):
         """FUnkcja odpowiedzialna za restart gry"""
-        self.destroy()
-        self.vbox.remove(self.grid)
+        self.points_arr.append(self.click_count)
+        self.grid.destroy()
+        self.click_count = 0
+        self.ranking_label.destroy()
+        self.ranking_box.destroy()
+        self.ranking_box = Gtk.Grid()
+        self.vbox.add(self.ranking_box)
+        self.ranking_panel()
+        self.point_label_score.set_markup("<b>0</b>")
+        self.point_label_score.show_all()
+        self.grid = BallsGrid(self.rows, self.cols)
         self.create_grid()
-        self.window.show_all()
+        self.grid.show()
 
     def clicked_handler(self, button, row, col):
 
@@ -223,9 +246,11 @@ class App(Gtk.Window):
                 from_point = self.first_click
                 to_point = self.second_click
 
-                if self.grid.cells[from_point].is_ball:
+                if self.grid.cells[from_point].is_ball and self.first_click != self.second_click:
                     self.grid.move_ball(from_point, to_point)
                     self.click_count += 1
+                    self.point_label_score.set_markup("<b>" + str(self.click_count) + "</b>")
+                    self.point_label_score.show_all()
 
                 self.grid.cells[self.first_click].button.set_active(False)
                 self.grid.cells[self.second_click].button.set_active(False)
